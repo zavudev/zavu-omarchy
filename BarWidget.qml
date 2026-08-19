@@ -28,6 +28,25 @@ Panel {
   property int selected: 0
   property bool composing: false
 
+  // "threads" | "senders" | "settings" — qué muestra el cuerpo del popover.
+  property string mode: "threads"
+
+  readonly property string senderFilterName: {
+    if (!svc || !svc.senderFilter) return "All senders"
+    for (var i = 0; i < svc.senders.length; i++)
+      if (svc.senders[i].id === svc.senderFilter)
+        return svc.senders[i].name || svc.senders[i].phoneNumber || "sender"
+    return "sender"
+  }
+
+  // `omarchy bar set` sin --json guarda cadenas, y "false" es verdadero en JS:
+  // sin esto, apagar las notificaciones las dejaría encendidas.
+  function boolSetting(name, fallback) {
+    var v = setting(name, fallback)
+    if (typeof v === "string") return v === "true"
+    return v === true
+  }
+
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
@@ -37,7 +56,7 @@ Panel {
   function applySettings() {
     if (!svc) return
     svc.pollSeconds = Number(setting("pollSeconds", 10))
-    svc.notify = setting("notify", true) === true
+    svc.notify = boolSetting("notify", true)
     svc.locale = String(setting("locale", "en"))
     svc.threadLimit = Number(setting("threadLimit", 25))
     svc.messageLimit = Number(setting("messageLimit", 25))
@@ -51,6 +70,7 @@ Panel {
     if (opened) {
       selected = 0
       composing = false
+      mode = "threads"
       svc.viewOpened()
       if (threads.length > 0) svc.loadMessages(threads[0].id)
     } else {
@@ -166,7 +186,7 @@ Panel {
         anchors.top: parent.top
         spacing: Style.space(10)
 
-        // ---------- header ----------
+        // ---------- header: sender · refresh · settings ----------
         Row {
           width: parent.width
           spacing: Style.space(8)
@@ -179,15 +199,30 @@ Panel {
             font.letterSpacing: 2
             anchors.verticalCenter: parent.verticalCenter
           }
+
+          // Selector de sender. Filtra por la API, no la página descargada.
           Text {
-            text: root.svc && root.svc.projectName ? root.svc.projectName : ""
-            color: Qt.darker(root.bar ? root.bar.foreground : Color.popups.text, 1.4)
+            id: senderChip
+            text: Fmt.elide(root.senderFilterName, 16) + "  ▾"
+            color: root.mode === "senders" ? root.accent
+                                           : Qt.darker(root.bar ? root.bar.foreground : Color.popups.text, 1.3)
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
-            elide: Text.ElideRight
-            width: Math.max(0, parent.width - Style.space(150))
             anchors.verticalCenter: parent.verticalCenter
+
+            MouseArea {
+              anchors.fill: parent
+              anchors.margins: -Style.space(4)
+              cursorShape: Qt.PointingHandCursor
+              onClicked: root.mode = root.mode === "senders" ? "threads" : "senders"
+            }
           }
+
+          Item {
+            width: Math.max(0, parent.width - senderChip.width - Style.space(120))
+            height: 1
+          }
+
           Text {
             visible: root.svc && root.svc.testMode
             text: "TEST"
@@ -195,6 +230,42 @@ Panel {
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
             anchors.verticalCenter: parent.verticalCenter
+          }
+
+          Text {
+            id: refreshGlyph
+            text: root.svc && root.svc.refreshing ? "󰑐" : "󰑓"
+            color: root.svc && root.svc.refreshing ? root.accent
+                                                   : Qt.darker(root.bar ? root.bar.foreground : Color.popups.text, 1.3)
+            font.family: Style.font.family
+            font.pixelSize: Style.font.body
+            anchors.verticalCenter: parent.verticalCenter
+
+            MouseArea {
+              anchors.fill: parent
+              anchors.margins: -Style.space(4)
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                if (root.svc) root.svc.refreshNow(root.currentThread() ? root.currentThread().id : "")
+              }
+            }
+          }
+
+          Text {
+            id: gearGlyph
+            text: "󰒓"
+            color: root.mode === "settings" ? root.accent
+                                            : Qt.darker(root.bar ? root.bar.foreground : Color.popups.text, 1.3)
+            font.family: Style.font.family
+            font.pixelSize: Style.font.body
+            anchors.verticalCenter: parent.verticalCenter
+
+            MouseArea {
+              anchors.fill: parent
+              anchors.margins: -Style.space(4)
+              cursorShape: Qt.PointingHandCursor
+              onClicked: root.mode = root.mode === "settings" ? "threads" : "settings"
+            }
           }
         }
 
@@ -305,11 +376,167 @@ Panel {
           font.pixelSize: Style.font.bodySmall
         }
 
+        // ---------- senders (filtro) ----------
+        Column {
+          width: parent.width
+          spacing: Style.space(1)
+          visible: root.mode === "senders"
+
+          Rectangle {
+            width: parent.width
+            height: Style.space(24)
+            color: (root.svc && !root.svc.senderFilter)
+                   ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.10) : "transparent"
+            Text {
+              anchors.verticalCenter: parent.verticalCenter
+              anchors.left: parent.left
+              anchors.leftMargin: Style.space(8)
+              text: "All senders"
+              color: root.bar ? root.bar.foreground : Color.popups.text
+              font.family: Style.font.family
+              font.pixelSize: Style.font.bodySmall
+            }
+            MouseArea {
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: { if (root.svc) root.svc.setSenderFilter(""); root.mode = "threads" }
+            }
+          }
+
+          Repeater {
+            model: root.svc ? root.svc.senders.length : 0
+            Rectangle {
+              required property int index
+              readonly property var sender: root.svc.senders[index]
+              readonly property bool sendable: sender.channels && sender.channels.length > 0
+              readonly property bool active: root.svc.senderFilter === sender.id
+
+              width: parent.width
+              height: Style.space(24)
+              color: active ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.10) : "transparent"
+
+              Text {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: Style.space(8)
+                anchors.right: parent.right
+                anchors.rightMargin: Style.space(70)
+                elide: Text.ElideRight
+                text: sender.name || sender.phoneNumber || sender.emailAddress || "sender"
+                color: sendable ? (root.bar ? root.bar.foreground : Color.popups.text)
+                                : Qt.darker(root.bar ? root.bar.foreground : Color.popups.text, 1.9)
+                font.family: Style.font.family
+                font.pixelSize: Style.font.bodySmall
+              }
+              Text {
+                visible: !sendable
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.right: parent.right
+                anchors.rightMargin: Style.space(8)
+                text: "no channels"
+                color: Qt.darker(root.bar ? root.bar.foreground : Color.popups.text, 1.9)
+                font.family: Style.font.family
+                font.pixelSize: Style.font.caption
+              }
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: { if (root.svc) root.svc.setSenderFilter(sender.id); root.mode = "threads" }
+              }
+            }
+          }
+        }
+
+        // ---------- ajustes rápidos ----------
+        // Cada fila escribe de verdad en shell.json vía `omarchy bar set`, y
+        // vuelve por onSettingsChanged. Nada de interruptores decorativos.
+        Column {
+          width: parent.width
+          spacing: Style.space(2)
+          visible: root.mode === "settings"
+
+          Repeater {
+            model: [
+              { key: "notify",       label: "Notifications",     kind: "bool" },
+              { key: "pollSeconds",  label: "Refresh every",     kind: "cycle", values: [5, 10, 30, 60], suffix: "s" },
+              { key: "threadLimit",  label: "Threads / refresh", kind: "cycle", values: [10, 25, 50] },
+              { key: "messageLimit", label: "Messages / thread", kind: "cycle", values: [10, 25, 50] }
+            ]
+
+            Rectangle {
+              required property int index
+              readonly property var row: [
+                { key: "notify",       label: "Notifications",     kind: "bool", values: [], suffix: "" },
+                { key: "pollSeconds",  label: "Refresh every",     kind: "cycle", values: [5, 10, 30, 60], suffix: "s" },
+                { key: "threadLimit",  label: "Threads / refresh", kind: "cycle", values: [10, 25, 50], suffix: "" },
+                { key: "messageLimit", label: "Messages / thread", kind: "cycle", values: [10, 25, 50], suffix: "" }
+              ][index]
+
+              readonly property var currentValue: row.kind === "bool"
+                ? root.boolSetting(row.key, true)
+                : Number(root.setting(row.key, row.values[1]))
+
+              width: parent.width
+              height: Style.space(26)
+              color: "transparent"
+
+              Text {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: Style.space(8)
+                text: row.label
+                color: root.bar ? root.bar.foreground : Color.popups.text
+                font.family: Style.font.family
+                font.pixelSize: Style.font.bodySmall
+              }
+
+              Text {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.right: parent.right
+                anchors.rightMargin: Style.space(8)
+                text: row.kind === "bool"
+                      ? (currentValue ? "on" : "off")
+                      : String(currentValue) + row.suffix
+                color: row.kind === "bool" && !currentValue
+                       ? Qt.darker(root.bar ? root.bar.foreground : Color.popups.text, 1.9)
+                       : root.accent
+                font.family: Style.font.family
+                font.pixelSize: Style.font.bodySmall
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  if (!root.svc) return
+                  if (row.kind === "bool") {
+                    root.svc.setSetting(row.key, !currentValue)
+                    return
+                  }
+                  var vals = row.values
+                  var i = vals.indexOf(currentValue)
+                  root.svc.setSetting(row.key, vals[(i + 1) % vals.length])
+                }
+              }
+            }
+          }
+
+          Text {
+            width: parent.width
+            wrapMode: Text.WordWrap
+            text: "Saved to shell.json. Turning notifications off keeps the unread dot in the bar."
+            color: Qt.darker(root.bar ? root.bar.foreground : Color.popups.text, 1.9)
+            font.family: Style.font.family
+            font.pixelSize: Style.font.caption
+            topPadding: Style.space(6)
+          }
+        }
+
         // ---------- threads ----------
         Column {
           width: parent.width
           spacing: Style.space(2)
-          visible: root.threads.length > 0
+          visible: root.mode === "threads" && root.threads.length > 0
 
           Repeater {
             model: Math.min(6, root.threads.length)
@@ -394,7 +621,7 @@ Panel {
         Column {
           width: parent.width
           spacing: Style.space(4)
-          visible: root.threads.length > 0
+          visible: root.mode === "threads" && root.threads.length > 0
 
           PanelSeparator { width: parent.width }
 
@@ -435,22 +662,11 @@ Panel {
 
         PanelSeparator { width: parent.width; visible: root.threads.length > 0 }
 
-        Row {
-          width: parent.width
-          spacing: Style.space(8)
-          visible: root.threads.length > 0
-
-          Button {
-            bordered: true
-            text: "Open inbox"
-            onClicked: root.openInbox()
-          }
-          Button {
-            bordered: true
-            text: root.svc && root.svc.refreshing ? "refreshing…" : "Refresh"
-            enabled: !(root.svc && root.svc.refreshing)
-            onClicked: { if (root.svc) root.svc.refreshNow(root.currentThread() ? root.currentThread().id : "") }
-          }
+        Button {
+          bordered: true
+          visible: root.mode === "threads" && root.threads.length > 0
+          text: "Open inbox"
+          onClicked: root.openInbox()
         }
       }
     }

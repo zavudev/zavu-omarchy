@@ -26,6 +26,21 @@ QtObject {
   property int threadLimit: 25
   property int messageLimit: 25
 
+  // Filtro por sender. Va como `senderId` a la API en vez de filtrar la página
+  // ya descargada: filtrar en local enseñaría "no hay nada" para un número cuyos
+  // hilos simplemente no entraron en los primeros 25.
+  property string senderFilter: ""
+
+  /**
+   * Escribe un ajuste del widget en shell.json a través del CLI de Omarchy.
+   * `--json` para que un booleano se guarde como booleano y no como la cadena
+   * "false", que es verdadera en JS y haría que apagar algo lo dejara encendido.
+   * shell.json recarga en caliente, así que el cambio vuelve por onSettingsChanged.
+   */
+  function setSetting(key, value) {
+    root.run("omarchy bar set dev.zavu.inbox " + key + " " + JSON.stringify(value) + " --json")
+  }
+
   // ------------------------------------------------------------------- state
   //
   // `status` is the whole story for the UI, so every surface renders the same
@@ -162,7 +177,7 @@ QtObject {
   function refresh() {
     if (!root.hasCredentials) return
     Api.abort(root._inflight)
-    root._inflight = Api.conversations(root.cfg(), { limit: root.threadLimit }, function (err, data, meta) {
+    root._inflight = Api.conversations(root.cfg(), { limit: root.threadLimit, senderId: root.senderFilter || undefined }, function (err, data, meta) {
       root._inflight = null
       if (meta && isFinite(meta.rateRemaining)) root.rateRemaining = meta.rateRemaining
       if (err) { root.applyError(err); return }
@@ -441,6 +456,12 @@ QtObject {
   property Timer refreshDone: Timer {
     interval: 600
     onTriggered: root.refreshing = false
+  }
+
+  function setSenderFilter(senderId) {
+    if (root.senderFilter === senderId) return
+    root.senderFilter = senderId
+    root.refresh()
   }
 
   function viewOpened() { root.activeViewers += 1; root.refresh() }
