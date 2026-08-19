@@ -728,7 +728,7 @@ Item {
               delegate: Item {
                 required property int index
                 readonly property var msg: root.messages[index]
-                readonly property bool outbound: msg.direction === "outbound"
+                readonly property bool outbound: Fmt.isOutbound(msg, root.current)
                 readonly property bool failed: msg.status === "failed"
 
                 width: messageList.width
