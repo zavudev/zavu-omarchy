@@ -20,6 +20,12 @@ QtObject {
   property bool notify: true
   property string locale: "en"
 
+  // Cuánto se pide en cada llamada. Bajo a propósito: la lista de hilos se
+  // sondea sin parar y el historial de un chat se lee de una sentada. Pedir 50
+  // de cada cosa era mover mucho JSON por algo que casi nunca se mira entero.
+  property int threadLimit: 25
+  property int messageLimit: 25
+
   // ------------------------------------------------------------------- state
   //
   // `status` is the whole story for the UI, so every surface renders the same
@@ -156,7 +162,7 @@ QtObject {
   function refresh() {
     if (!root.hasCredentials) return
     Api.abort(root._inflight)
-    root._inflight = Api.conversations(root.cfg(), { limit: 50 }, function (err, data, meta) {
+    root._inflight = Api.conversations(root.cfg(), { limit: root.threadLimit }, function (err, data, meta) {
       root._inflight = null
       if (meta && isFinite(meta.rateRemaining)) root.rateRemaining = meta.rateRemaining
       if (err) { root.applyError(err); return }
@@ -253,7 +259,7 @@ QtObject {
   function loadMessages(conversationId) {
     if (!conversationId || !root.hasCredentials) return
     root.loadingConversationId = conversationId
-    Api.conversationMessages(root.cfg(), conversationId, { limit: 50 }, function (err, data) {
+    Api.conversationMessages(root.cfg(), conversationId, { limit: root.messageLimit }, function (err, data) {
       root.loadingConversationId = ""
       if (err) { root.applyError(err); return }
       var items = (data && data.items) ? data.items.slice().reverse() : []
@@ -408,12 +414,33 @@ QtObject {
       return
     }
     root.searching = true
-    root._searchInflight = Api.conversations(root.cfg(), { search: query, limit: 50 }, function (err, data) {
+    root._searchInflight = Api.conversations(root.cfg(), { search: query, limit: root.threadLimit }, function (err, data) {
       root._searchInflight = null
       root.searching = false
       if (err) { root.searchResults = []; return }
       root.searchResults = (data && data.items) ? data.items : []
     })
+  }
+
+  /**
+   * Refresco a petición del usuario. Además de la lista, recarga los mensajes
+   * del hilo abierto — que es lo que el sondeo NO hace: el tick sólo trae los
+   * hilos, así que un chat abierto no ve llegar nada hasta que se re-selecciona.
+   */
+  property bool refreshing: false
+  function refreshNow(conversationId) {
+    if (!root.hasCredentials) { root.credentialsFile.reload(); return }
+    root.refreshing = true
+    root.refresh()
+    if (conversationId) root.loadMessages(conversationId)
+    refreshDone.restart()
+  }
+
+  // Sólo apaga el indicador; el trabajo real lo hacen los callbacks. Sin
+  // setTimeout en este motor, un Timer es la forma de dar el respiro visual.
+  property Timer refreshDone: Timer {
+    interval: 600
+    onTriggered: root.refreshing = false
   }
 
   function viewOpened() { root.activeViewers += 1; root.refresh() }

@@ -103,6 +103,12 @@ Item {
     if (next !== root.selectedThread) selectThread(next)
   }
 
+  // El sondeo sólo trae la lista de hilos, así que un chat abierto no ve llegar
+  // nada por su cuenta. Esto refresca ambas cosas.
+  function manualRefresh() {
+    if (svc) svc.refreshNow(current ? current.id : "")
+  }
+
   function submitReply() {
     if (!svc || !current) return
     var text = composer.text
@@ -177,6 +183,8 @@ Item {
             root.moveThread(-1); event.accepted = true
           } else if (event.key === Qt.Key_Return && !composer.activeFocus && !searchField.activeFocus) {
             composer.forceActiveFocus(); event.accepted = true
+          } else if (event.key === Qt.Key_R && !composer.activeFocus && !searchField.activeFocus) {
+            root.manualRefresh(); event.accepted = true
           }
         }
 
@@ -242,11 +250,22 @@ Item {
               }
             }
             Text {
-              text: root.svc && root.svc.lastSyncAt > 0 ? "synced " + Fmt.ago(root.svc.lastSyncAt) : "—"
+              text: {
+                if (root.svc && root.svc.refreshing) return "refreshing…"
+                return root.svc && root.svc.lastSyncAt > 0 ? "synced " + Fmt.ago(root.svc.lastSyncAt) : "—"
+              }
               color: root.faint
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Button {
+              bordered: true
+              anchors.verticalCenter: parent.verticalCenter
+              text: "refresh  r"
+              enabled: !(root.svc && root.svc.refreshing)
+              onClicked: root.manualRefresh()
             }
           }
         }

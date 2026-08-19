@@ -31,13 +31,20 @@ Panel {
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
-  Component.onCompleted: {
-    if (svc) {
-      svc.pollSeconds = Number(setting("pollSeconds", 10))
-      svc.notify = setting("notify", true) === true
-      svc.locale = String(setting("locale", "en"))
-    }
+  // Se aplican en cada cambio, no sólo al arrancar: shell.json recarga en
+  // caliente, así que apagar las notificaciones en los ajustes debe surtir
+  // efecto ya, sin reiniciar el shell.
+  function applySettings() {
+    if (!svc) return
+    svc.pollSeconds = Number(setting("pollSeconds", 10))
+    svc.notify = setting("notify", true) === true
+    svc.locale = String(setting("locale", "en"))
+    svc.threadLimit = Number(setting("threadLimit", 25))
+    svc.messageLimit = Number(setting("messageLimit", 25))
   }
+
+  Component.onCompleted: applySettings()
+  onSettingsChanged: applySettings()
 
   onOpenedChanged: {
     if (!svc) return
@@ -428,11 +435,22 @@ Panel {
 
         PanelSeparator { width: parent.width; visible: root.threads.length > 0 }
 
-        Button {
-            bordered: true
+        Row {
+          width: parent.width
+          spacing: Style.space(8)
           visible: root.threads.length > 0
-          text: "Open inbox"
-          onClicked: root.openInbox()
+
+          Button {
+            bordered: true
+            text: "Open inbox"
+            onClicked: root.openInbox()
+          }
+          Button {
+            bordered: true
+            text: root.svc && root.svc.refreshing ? "refreshing…" : "Refresh"
+            enabled: !(root.svc && root.svc.refreshing)
+            onClicked: { if (root.svc) root.svc.refreshNow(root.currentThread() ? root.currentThread().id : "") }
+          }
         }
       }
     }
