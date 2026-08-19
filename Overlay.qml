@@ -64,9 +64,17 @@ Item {
     if (threads.length > 0) svc.loadMessages(threads[0].id)
   }
 
+  // El shell llama a close() cuando él mismo esconde el overlay, así que aquí
+  // sólo se baja la bandera: avisarle de vuelta desde acá lo hace recursar
+  // hasta reventar la pila. dismiss() es el camino del usuario (Escape, clic
+  // fuera, un botón) y es el único que habla con el shell.
   function close() {
     root.opened = false
     if (svc) svc.viewClosed()
+  }
+
+  function dismiss() {
+    root.close()
     if (root.shell && typeof root.shell.hide === "function")
       root.shell.hide((root.manifest && root.manifest.id) || "dev.zavu.inbox")
   }
@@ -129,7 +137,7 @@ Item {
     exclusionMode: ExclusionMode.Ignore
 
     Rectangle { anchors.fill: parent; color: Color.menu.scrim }
-    MouseArea { anchors.fill: parent; onClicked: root.close() }
+    MouseArea { anchors.fill: parent; onClicked: root.dismiss() }
 
     BorderSurface {
       id: card
@@ -152,7 +160,7 @@ Item {
         Keys.onPressed: function (event) {
           if (event.key === Qt.Key_Escape) {
             if (root.searchText.length > 0) { root.searchText = ""; searchField.text = "" }
-            else root.close()
+            else root.dismiss()
             event.accepted = true
           } else if (event.key === Qt.Key_Slash && !composer.activeFocus && !searchField.activeFocus) {
             searchField.forceActiveFocus()
@@ -306,7 +314,7 @@ Item {
               anchors.horizontalCenter: parent.horizontalCenter
               visible: root.svc && (root.svc.status === "needs_login" || root.svc.status === "unauthorized")
               text: root.svc && root.svc.status === "unauthorized" ? "Sign in again" : "Sign in"
-              onClicked: { if (root.svc) root.svc.signIn(); root.close() }
+              onClicked: { if (root.svc) root.svc.signIn(); root.dismiss() }
             }
             Text {
               anchors.horizontalCenter: parent.horizontalCenter
@@ -361,7 +369,7 @@ Item {
               text: "Connect an account"
               onClicked: {
                 if (root.svc) root.svc.openUrl(Fmt.accountsUrl(root.svc.locale))
-                root.close()
+                root.dismiss()
               }
             }
             Text {
