@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "dev.zavu.inbox",
+  "name": "Zavu Inbox",
+  "version": "0.1.0",
+  "author": "Zavu",
+  "license": "MIT",
+  "description": "Read and reply to every conversation your Zavu numbers are having, without leaving the shell",
+  "homepage": "https://github.com/zavudev/zavu-omarchy",
+  "keepLoaded": true,
+  "kinds": ["service", "overlay", "bar-widget"],
+  "entryPoints": {
+    "service": "Client.qml",
+    "overlay": "Overlay.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Zavu Inbox",
+    "description": "Unread count in the bar, recent threads and a reply box in the panel",
+    "category": "Communication",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "pollSeconds": 10,
+      "notify": true,
+      "enterSends": true,
+      "locale": "en"
+    },
+    "schema": [
+      { "key": "pollSeconds", "type": "integer", "label": "Refresh interval (seconds)", "min": 3, "max": 300, "step": 1, "defaultValue": 10,
+        "description": "How often to check for new messages while idle. The panel and the inbox poll faster while open." },
+      { "key": "notify", "type": "boolean", "label": "Desktop notifications", "defaultValue": true,
+        "description": "Notify on inbound messages that arrive while the inbox is closed." },
+      { "key": "enterSends", "type": "boolean", "label": "Enter sends the reply", "defaultValue": true,
+        "description": "When off, Enter adds a newline and Ctrl+Enter sends." },
+      { "key": "locale", "type": "enum", "label": "Dashboard language", "options": ["en", "es", "pt-BR"], "defaultValue": "en",
+        "description": "Used when opening the dashboard in your browser." }
+    ]
+  }
+}
