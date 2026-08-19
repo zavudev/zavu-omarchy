@@ -55,7 +55,7 @@ Panel {
   // efecto ya, sin reiniciar el shell.
   function applySettings() {
     if (!svc) return
-    svc.pollSeconds = Number(setting("pollSeconds", 10))
+    svc.pollSeconds = Number(setting("pollSeconds", 30))
     svc.notify = boolSetting("notify", true)
     svc.locale = String(setting("locale", "en"))
     svc.threadLimit = Number(setting("threadLimit", 25))
@@ -458,7 +458,7 @@ Panel {
           Repeater {
             model: [
               { key: "notify",       label: "Notifications",     kind: "bool" },
-              { key: "pollSeconds",  label: "Refresh every",     kind: "cycle", values: [5, 10, 30, 60], suffix: "s" },
+              { key: "pollSeconds",  label: "Refresh every",     kind: "cycle", values: [10, 30, 60, 120], suffix: "s" },
               { key: "threadLimit",  label: "Threads / refresh", kind: "cycle", values: [10, 25, 50] },
               { key: "messageLimit", label: "Messages / thread", kind: "cycle", values: [10, 25, 50] }
             ]
@@ -466,15 +466,15 @@ Panel {
             Rectangle {
               required property int index
               readonly property var row: [
-                { key: "notify",       label: "Notifications",     kind: "bool", values: [], suffix: "" },
-                { key: "pollSeconds",  label: "Refresh every",     kind: "cycle", values: [5, 10, 30, 60], suffix: "s" },
-                { key: "threadLimit",  label: "Threads / refresh", kind: "cycle", values: [10, 25, 50], suffix: "" },
-                { key: "messageLimit", label: "Messages / thread", kind: "cycle", values: [10, 25, 50], suffix: "" }
+                { key: "notify",       label: "Notifications",     kind: "bool",  values: [],              def: true, suffix: "" },
+                { key: "pollSeconds",  label: "Refresh every",     kind: "cycle", values: [10, 30, 60, 120], def: 30,  suffix: "s" },
+                { key: "threadLimit",  label: "Threads / refresh", kind: "cycle", values: [10, 25, 50],      def: 25,  suffix: "" },
+                { key: "messageLimit", label: "Messages / thread", kind: "cycle", values: [10, 25, 50],      def: 25,  suffix: "" }
               ][index]
 
               readonly property var currentValue: row.kind === "bool"
                 ? root.boolSetting(row.key, true)
-                : Number(root.setting(row.key, row.values[1]))
+                : Number(root.setting(row.key, row.def))
 
               width: parent.width
               height: Style.space(26)

@@ -25,7 +25,7 @@
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
-      "pollSeconds": 10,
+      "pollSeconds": 30,
       "notify": true,
       "enterSends": true,
       "locale": "en",
@@ -40,7 +40,7 @@
         "min": 3,
         "max": 300,
         "step": 1,
-        "defaultValue": 10,
+        "defaultValue": 30,
         "description": "How often to check for new messages while idle. The panel and the inbox poll faster while open."
       },
       {

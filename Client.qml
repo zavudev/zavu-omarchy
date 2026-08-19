@@ -16,7 +16,7 @@ QtObject {
   property var manifest: null
 
   // ---------------------------------------------------------------- settings
-  property int pollSeconds: 10
+  property int pollSeconds: 30
   property bool notify: true
   property string locale: "en"
 
