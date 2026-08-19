@@ -146,8 +146,13 @@ QtObject {
     root.status = "loading"
     Api.me(root.cfg(), function (err, data) {
       if (err) { root.applyError(err); return }
-      root.projectName = data && data.project ? (data.project.name || "") : ""
-      root.teamName = data && data.team ? (data.team.name || "") : ""
+      // Defensivo a propósito: `name` es nullable en la API, el cuerpo puede
+      // venir vacío en un 200, y estas propiedades son `string` — asignarles
+      // null aborta la función y deja el arranque a medias.
+      var project = (data && typeof data.project === "object" && data.project) ? data.project : {}
+      var team = (data && typeof data.team === "object" && data.team) ? data.team : {}
+      root.projectName = project.name ? String(project.name) : ""
+      root.teamName = team.name ? String(team.name) : ""
       root.testMode = !!(data && data.isTestMode)
       root.loadSenders()
     })
