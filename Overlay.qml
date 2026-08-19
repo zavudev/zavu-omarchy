@@ -401,68 +401,79 @@ Item {
             anchors.top: parent.top; anchors.bottom: parent.bottom; anchors.left: parent.left
             width: Style.space(190)
 
-            Column {
-              anchors.fill: parent
+            // Cabecera y botón fijos; la lista scrollea entre medias. Con un
+            // Column suelto y ~25 senders, el rail se desbordaba por debajo de
+            // la tarjeta y pintaba por encima del resto de la pantalla: nada
+            // recorta un Column, y no scrollea.
+            Text {
+              id: railLabel
+              text: "SENDERS"
+              color: root.faint
+              font.family: Style.font.family
+              font.pixelSize: Style.font.caption
+              font.letterSpacing: 2
+              anchors.top: parent.top
               anchors.topMargin: Style.space(12)
-              spacing: Style.space(2)
+              x: Style.space(16)
+            }
 
-              Text {
-                text: "SENDERS"
-                color: root.faint
-                font.family: Style.font.family
-                font.pixelSize: Style.font.caption
-                font.letterSpacing: 2
-                x: Style.space(16)
-                bottomPadding: Style.space(6)
-              }
+            ListView {
+              id: senderList
+              anchors.top: railLabel.bottom
+              anchors.topMargin: Style.space(6)
+              anchors.left: parent.left
+              anchors.right: parent.right
+              anchors.bottom: railFooter.top
+              anchors.bottomMargin: Style.space(8)
+              clip: true
+              model: root.svc ? root.svc.senders.length : 0
 
-              Repeater {
-                model: root.svc ? root.svc.senders.length : 0
-                Item {
-                  required property int index
-                  readonly property var sender: root.svc.senders[index]
-                  readonly property bool sendable: sender.channels && sender.channels.length > 0
+              delegate: Item {
+                required property int index
+                readonly property var sender: root.svc.senders[index]
+                readonly property bool sendable: sender.channels && sender.channels.length > 0
 
-                  width: rail.width
-                  height: Style.space(26)
+                width: senderList.width
+                height: Style.space(26)
 
-                  Row {
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.left: parent.left
-                    anchors.leftMargin: Style.space(16)
-                    anchors.right: parent.right
-                    anchors.rightMargin: Style.space(10)
-                    spacing: Style.space(6)
+                Text {
+                  anchors.verticalCenter: parent.verticalCenter
+                  anchors.left: parent.left
+                  anchors.leftMargin: Style.space(16)
+                  width: parent.width - Style.space(26) - (sendable ? 0 : Style.space(70))
+                  elide: Text.ElideRight
+                  text: sender.name || sender.phoneNumber || sender.emailAddress || "sender"
+                  color: sendable ? root.fg : root.faint
+                  font.family: Style.font.family
+                  font.pixelSize: Style.font.bodySmall
+                }
 
-                    Text {
-                      text: Fmt.elide(sender.name || sender.phoneNumber || sender.emailAddress || "sender", 18)
-                      color: sendable ? root.fg : root.faint
-                      font.family: Style.font.family
-                      font.pixelSize: Style.font.bodySmall
-                      anchors.verticalCenter: parent.verticalCenter
-                    }
-                  }
-
-                  // A sender with no channels cannot send: say so instead of
-                  // letting it look ready. `channels` is computed capability —
-                  // a phone number alone enables nothing.
-                  Text {
-                    visible: !sendable
-                    text: "no channels"
-                    color: root.faint
-                    font.family: Style.font.family
-                    font.pixelSize: Style.font.caption
-                    anchors.right: parent.right
-                    anchors.rightMargin: Style.space(12)
-                    anchors.verticalCenter: parent.verticalCenter
-                  }
+                // Un sender sin canales no puede enviar: decirlo, en vez de
+                // dejar que parezca listo. `channels` es capacidad calculada —
+                // un número de teléfono por sí solo no habilita nada.
+                Text {
+                  visible: !sendable
+                  text: "no channels"
+                  color: root.faint
+                  font.family: Style.font.family
+                  font.pixelSize: Style.font.caption
+                  anchors.right: parent.right
+                  anchors.rightMargin: Style.space(12)
+                  anchors.verticalCenter: parent.verticalCenter
                 }
               }
+            }
 
-              Item { width: 1; height: Style.space(10) }
+            Item {
+              id: railFooter
+              anchors.bottom: parent.bottom
+              anchors.left: parent.left
+              anchors.right: parent.right
+              height: Style.space(44)
 
               Button {
-            bordered: true
+                bordered: true
+                anchors.verticalCenter: parent.verticalCenter
                 x: Style.space(12)
                 text: "Connect account"
                 onClicked: {
