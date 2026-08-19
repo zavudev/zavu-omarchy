@@ -1,9 +1,42 @@
 # Zavu Inbox for Omarchy
 
-Read and reply to every conversation your Zavu numbers are having — WhatsApp,
-SMS, email, Telegram — without leaving the shell.
+Every conversation your business numbers are having — WhatsApp, SMS, email,
+Telegram — one keystroke away, inside the shell you already live in.
 
-One glyph in the bar. `Super+M` for the full inbox.
+No browser. No tab. No context switch.
+
+![The Zavu inbox running inside Omarchy](docs/inbox.png)
+
+## What is Zavu
+
+[Zavu](https://zavu.dev) is one API for every messaging channel: WhatsApp, SMS,
+Telegram, Email, Instagram, Messenger and voice. One `send()` call, and Zavu
+picks the channel, transforms the content for it, and falls back when one fails.
+
+Businesses use it to run support, sales and notifications across channels
+without wiring up five different providers. This plugin puts the conversation
+side of that — the human part — into your desktop.
+
+**One API. Every message.** → [zavu.dev](https://zavu.dev)
+
+## What it lets you do
+
+- **Read and reply to every channel in one place.** WhatsApp, SMS, email and
+  Telegram threads land in the same list. Replies leave from the number the
+  contact already knows.
+- **Know when something arrives** without a browser open. A quiet dot in the
+  bar, a desktop notification when you want one, and a count when there is more
+  than one.
+- **Find a conversation by who it is with** — phone number in any format, email,
+  group name or WhatsApp username. Paste `+1 (555) 123-4567` and it finds the
+  thread stored as `+15551234567`.
+- **Work from the keyboard.** `Super+M` to open, `j`/`k` through threads, `/` to
+  search, `Enter` to reply, `Esc` to get out.
+- **See what the channel actually allows.** WhatsApp's 24-hour window is shown
+  as it counts down, and the composer closes when it lapses instead of letting
+  you write something that would be refused.
+
+![Searching threads by phone number, email or group name](docs/search.png)
 
 ## Install
 
@@ -13,16 +46,19 @@ omarchy plugin add https://github.com/zavudev/zavu-omarchy.git --enable
 
 ## Sign in
 
-There is no second login. If you have ever run `zavudev login` on this machine,
-the plugin is already signed in — it reads the CLI's own
-`~/.zavu/credentials.json` and never writes to it.
+There is no separate login. If you have ever run `zavudev login` on this
+machine, the plugin is already signed in — it reads the CLI's own credentials
+and never writes to them.
 
 ```bash
 npx zavudev@latest login
 ```
 
-The bar picks it up the moment the file appears; no restart. `ZAVUDEV_API_KEY`
-in the environment wins over the file, matching the CLI's own precedence.
+Your browser opens, you pick a project, and the bar picks it up the moment you
+are done. No key to copy or paste.
+
+Don't have an account yet? [Create one at zavu.dev](https://zavu.dev) — the free
+plan is enough to try this.
 
 ## Hotkey
 
@@ -38,54 +74,44 @@ end)
 
 | Key | Action |
 |-----|--------|
+| `Super+M` | Open or close the inbox |
 | `j` / `k` · arrows | Move through threads |
 | `Enter` | Focus the composer, then send |
 | `/` | Search threads |
+| `r` | Refresh now |
 | `Esc` | Clear the search, then close |
 
 ## Settings
 
-Editable from Omarchy's settings panel: refresh interval, desktop
-notifications, enter-to-send, dashboard language.
+Click the gear in the bar panel, or use Omarchy's settings screen. Everything
+applies immediately — no restart:
 
-## What it does not do
+| Setting | Default | |
+|---|---|---|
+| Desktop notifications | on | Off silences notifications; the unread dot stays |
+| Refresh every | 30s | Faster while a panel is open |
+| Threads per refresh | 25 | |
+| Messages per thread | 25 | |
 
-Being straight about this is the point:
+## Good to know
 
-- **It polls, it does not stream.** Webhooks are server-to-server; there is no
-  socket for a desktop client. The header says `synced Ns ago` and never claims
-  to be live. Cadence adapts: 3s with a surface open, your setting when idle,
-  and it backs off on the rate-limit headers the API already sends.
-- **Search matches who the thread is with**, never message bodies: phone number
-  in any format, email, group subject, WhatsApp username, BSUID. Results come
-  back ranked by relevance, so the recency order does not hold while a query is
-  active — the scope line says so.
-- **The WhatsApp 24-hour window is real.** On the official `whatsapp` channel,
-  when the last inbound message is older than 24h the composer closes instead of
-  offering a send that the API will refuse. `whatsapp_alt` has no window, so its
-  composer stays open.
-- **A send is accepted, not completed.** `POST /v1/messages` answers 202 and
-  queues; delivery and failure land later. Bubbles stay `sending…` until a poll
-  confirms them, and a failure prints the API's own error message verbatim.
+- **It checks for messages on a timer**, it does not hold a live connection —
+  the status line always tells you how long ago it synced, so you never have to
+  guess whether what you are looking at is current. Press `r` for a refresh now.
+- **Search matches who the thread is with**, not the words inside it.
+- **A sender with no channels can't send.** Those show greyed and labelled
+  rather than looking ready — a phone number on its own does not enable SMS.
 
 ## Security
 
-Plugins share the long-running Omarchy shell process with your user's
-permissions. This one:
+This plugin runs inside the Omarchy shell with your user's permissions, so it
+keeps its reach as small as it can:
 
-- never writes your API key — it only reads the CLI's file
-- talks to exactly one host, whatever `apiBaseUrl` your credentials name
-- never passes message content to a shell command
-- ships no telemetry
-
-## Why no SDK
-
-`@zavudev/sdk` can be made to run here (bundle it to es2016 and shim `fetch`,
-`Headers`, `AbortController`, `setTimeout`, `Object.fromEntries`), but Quickshell
-loads plugins by cloning a git repo with no build step, and a correct
-`setTimeout` needs a QML `Timer` bridged into the bundle — without it retries and
-timeouts hang. For roughly ten endpoints, `lib/Api.js` over `XMLHttpRequest` is
-less code than the shims.
+- It **never writes your API key** — it only reads the one `zavudev login`
+  already created, and only shows its last four characters.
+- It talks to **one host**, your Zavu API endpoint, over TLS. No telemetry, no
+  analytics, no third party.
+- Message content **never reaches a shell command**.
 
 ## License
 
