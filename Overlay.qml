@@ -36,7 +36,13 @@ Item {
   readonly property var current: (selectedThread >= 0 && selectedThread < threads.length)
     ? threads[selectedThread] : null
 
-  readonly property var messages: (svc && current) ? svc.messagesFor(current.id) : []
+  // Depende de `messagesByConversation` (una propiedad), NO de messagesFor()
+  // (una función): un binding que sólo llama a una función no se vuelve a
+  // evaluar cuando cambia el estado de dentro, así que los mensajes llegaban
+  // y el panel se quedaba vacío.
+  readonly property var messages: (svc && current && svc.messagesByConversation)
+    ? (svc.messagesByConversation[current.id] || [])
+    : []
 
   // Only the official WhatsApp channel has a 24-hour window. whatsapp_alt has
   // none, so its composer stays open — deriving this from the thread's channel
@@ -717,9 +723,16 @@ Item {
                 width: messageList.width
                 height: bubble.height
 
+                // El ancho sale del texto, con tope; NO de anclar la columna a
+                // los bordes de la burbuja. Eso último es circular —la burbuja
+                // mide según el contenido y el contenido según la burbuja— y
+                // QML lo rompe colapsando a unos pocos píxeles, que es por qué
+                // los mensajes salían estrangulados en una tira estrecha.
+                readonly property real maxBubbleWidth: messageList.width * 0.78 - Style.space(22)
+
                 BorderSurface {
                   id: bubble
-                  width: Math.min(messageList.width * 0.74, bubbleCol.implicitWidth + Style.space(22))
+                  width: bubbleCol.width + Style.space(22)
                   height: bubbleCol.implicitHeight + Style.space(14)
                   radius: Style.cornerRadius
                   anchors.right: outbound ? parent.right : undefined
@@ -731,13 +744,26 @@ Item {
 
                   Column {
                     id: bubbleCol
-                    anchors.left: parent.left; anchors.right: parent.right
+                    x: Style.space(11)
                     anchors.verticalCenter: parent.verticalCenter
-                    anchors.leftMargin: Style.space(11); anchors.rightMargin: Style.space(11)
+                    width: Math.max(body.width, meta.implicitWidth, Style.space(60))
                     spacing: Style.space(4)
 
+                    // El ancho natural se mide FUERA del Text. En Qt Quick el
+                    // implicitWidth de un Text con wrapMode depende de su
+                    // width, así que atar uno al otro sigue siendo circular y
+                    // colapsa la burbuja a una tira de pocos píxeles.
+                    // TextMetrics mide el texto sin envolver y no depende de
+                    // nada del elemento, que es lo que rompe el ciclo.
+                    TextMetrics {
+                      id: metrics
+                      font: body.font
+                      text: body.text
+                    }
+
                     Text {
-                      width: parent.width
+                      id: body
+                      width: Math.min(maxBubbleWidth, metrics.width)
                       wrapMode: Text.WordWrap
                       text: msg.text || ("[" + (msg.messageType || "media") + "]")
                       color: root.fg
@@ -749,7 +775,7 @@ Item {
                     // reader what to do; anything we substituted would be worse.
                     Text {
                       visible: failed
-                      width: parent.width
+                      width: bubbleCol.width
                       wrapMode: Text.WordWrap
                       text: (msg.errorCode ? msg.errorCode + " · " : "") + (msg.errorMessage || "Send failed")
                       color: Color.urgent
@@ -758,6 +784,7 @@ Item {
                     }
 
                     Text {
+                      id: meta
                       text: {
                         if (msg.__pending) return "sending…"
                         if (failed) return "failed"

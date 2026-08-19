@@ -9,7 +9,11 @@ import "lib/Format.js" as Fmt
 Panel {
   id: root
   moduleName: "dev.zavu.inbox"
-  ipcTarget: "dev.zavu.inbox.bar"
+  // Sin ipcTarget a propósito. La base Panel monta un IpcHandler en cuanto se
+  // le da uno, y registrarlo mientras el bar widget se crea dinámicamente
+  // (createObject, una instancia por monitor) revienta quickshell con SIGSEGV
+  // dentro de IpcHandler::updateRegistration. El widget no necesita ruta IPC
+  // propia: se abre con un clic, y el overlay se invoca por el id del plugin.
 
   readonly property var svc: bar && bar.shell && typeof bar.shell.serviceFor === "function"
     ? bar.shell.serviceFor("dev.zavu.inbox") : null

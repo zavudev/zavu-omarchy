@@ -225,7 +225,8 @@ QtObject {
     if (root.status === "rate_limited") return 60000
     if (root.rateRemaining >= 0 && root.rateRemaining < 60) return 30000
     if (root.activeViewers > 0) return 3000
-    if (!root.hasCredentials || root.status === "unauthorized") return 30000
+    if (!root.hasCredentials) return 3000
+    if (root.status === "unauthorized") return 30000
     if (root.status === "offline") return 15000
     return Math.max(3, root.pollSeconds) * 1000
   }
@@ -235,7 +236,14 @@ QtObject {
     repeat: true
     running: true
     onTriggered: {
-      if (!root.hasCredentials) return
+      // Sin credenciales el trabajo es re-leer el fichero, no rendirse.
+      //
+      // `watchChanges` vigila un inodo, y cuando el usuario aún no ha hecho
+      // login ese fichero no existe: `zavudev login` lo CREA, y esa creación no
+      // llega como cambio. Sin este reintento el plugin se queda en "Not signed
+      // in" para siempre aunque el login haya ido bien — que es exactamente lo
+      // que pasó la primera vez que se probó.
+      if (!root.hasCredentials) { root.credentialsFile.reload(); return }
       if (root.status === "unauthorized") return
       root.refresh()
     }
