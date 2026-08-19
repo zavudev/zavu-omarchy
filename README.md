@@ -38,11 +38,32 @@ side of that — the human part — into your desktop.
 
 ![Searching threads by phone number, email or group name](docs/search.png)
 
+## Requirements
+
+- **Omarchy 4.x** (Quickshell shell).
+- **A Zavu account** and a one-time `npx zavudev login`, which needs Node
+  available through `npx`. Nothing else is installed and nothing is compiled —
+  the plugin talks to the Zavu REST API directly.
+- **`notify-send`** (libnotify) for desktop notifications. Optional: turn
+  notifications off in settings and everything else still works.
+- **`xdg-open`**, used only when you click a link to open the dashboard.
+
 ## Install
 
 ```bash
 omarchy plugin add https://github.com/zavudev/zavu-omarchy.git --enable
 ```
+
+## Remove
+
+```bash
+omarchy plugin remove dev.zavu.inbox
+```
+
+That is all of it. The plugin creates no files of its own, so removing it leaves
+nothing behind but its entry in `shell.json`, which the command clears too. Your
+`~/.zavu/credentials.json` belongs to the Zavu CLI and is left untouched —
+run `zavudev logout` if you want that gone as well.
 
 ## Sign in
 
@@ -111,6 +132,9 @@ keeps its reach as small as it can:
   already created, and only shows its last four characters.
 - It talks to **one host**, your Zavu API endpoint, over TLS. No telemetry, no
   analytics, no third party.
+- It **only writes its own settings**, and only when you change one — that
+  single entry in `shell.json`, through Omarchy's own `omarchy bar set`. It
+  touches no other configuration, yours or anyone else's.
 - Message content **never reaches a shell command**.
 
 ## License
