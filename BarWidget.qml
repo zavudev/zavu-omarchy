@@ -472,9 +472,21 @@ Panel {
                 { key: "messageLimit", label: "Messages / thread", kind: "cycle", values: [10, 25, 50],      def: 25,  suffix: "" }
               ][index]
 
-              readonly property var currentValue: row.kind === "bool"
-                ? root.boolSetting(row.key, true)
-                : Number(root.setting(row.key, row.def))
+              // Lee `root.settings` DENTRO del binding en vez de delegar en una
+              // función: un binding que sólo llama a un método no se vuelve a
+              // evaluar de forma fiable cuando cambia el estado de dentro, y el
+              // panel se quedaba enseñando los valores por defecto aunque el
+              // ajuste guardado fuera otro — daba a entender que apagar las
+              // notificaciones no había servido de nada, cuando sí había servido.
+              readonly property var currentValue: {
+                var stored = root.settings ? root.settings[row.key] : undefined
+                var missing = stored === undefined || stored === null
+                if (row.kind === "bool") {
+                  if (missing) return true
+                  return typeof stored === "string" ? stored === "true" : stored === true
+                }
+                return Number(missing ? row.def : stored)
+              }
 
               width: parent.width
               height: Style.space(26)
