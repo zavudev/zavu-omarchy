@@ -18,6 +18,24 @@ Item {
   property bool opened: false
   property int selectedThread: 0
   property string searchText: ""
+  property string senderQuery: ""
+
+  // "All senders" va como fila 0 de la misma lista, así que seleccionar "todos"
+  // y seleccionar un número concreto son el mismo gesto y el mismo delegate.
+  readonly property var visibleSenders: {
+    var all = (svc && svc.senders) ? svc.senders : []
+    var q = root.senderQuery.trim().toLowerCase()
+    var out = [{ id: "", name: "All senders", channels: ["*"], __all: true }]
+    for (var i = 0; i < all.length; i++) {
+      var s = all[i]
+      if (q.length > 0) {
+        var hay = ((s.name || "") + " " + (s.phoneNumber || "") + " " + (s.emailAddress || "")).toLowerCase()
+        if (hay.indexOf(q) === -1) continue
+      }
+      out.push(s)
+    }
+    return out
+  }
   property string failureCode: ""
   property string failureMessage: ""
 
@@ -105,6 +123,12 @@ Item {
 
   // El sondeo sólo trae la lista de hilos, así que un chat abierto no ve llegar
   // nada por su cuenta. Esto refresca ambas cosas.
+  function pickSender(senderId) {
+    if (!svc) return
+    svc.setSenderFilter(senderId)
+    root.selectedThread = 0
+  }
+
   function manualRefresh() {
     if (svc) svc.refreshNow(current ? current.id : "")
   }
@@ -436,24 +460,51 @@ Item {
               x: Style.space(16)
             }
 
+            // Con dos docenas de cuentas, el rail sin búsqueda es una lista para
+            // hacer scroll a ojo. Filtra en local sobre los senders ya cargados:
+            // vienen todos de una sola llamada, así que no hay nada que pedir.
+            TextField {
+              id: senderSearch
+              anchors.top: railLabel.bottom
+              anchors.topMargin: Style.space(6)
+              anchors.left: parent.left
+              anchors.right: parent.right
+              anchors.leftMargin: Style.space(12)
+              anchors.rightMargin: Style.space(12)
+              placeholderText: "filter senders"
+              onTextChanged: root.senderQuery = text
+            }
+
             ListView {
               id: senderList
-              anchors.top: railLabel.bottom
+              anchors.top: senderSearch.bottom
               anchors.topMargin: Style.space(6)
               anchors.left: parent.left
               anchors.right: parent.right
               anchors.bottom: railFooter.top
               anchors.bottomMargin: Style.space(8)
               clip: true
-              model: root.svc ? root.svc.senders.length : 0
+              model: root.visibleSenders.length
 
-              delegate: Item {
+              delegate: Rectangle {
                 required property int index
-                readonly property var sender: root.svc.senders[index]
-                readonly property bool sendable: sender.channels && sender.channels.length > 0
+                readonly property var sender: root.visibleSenders[index]
+                readonly property bool isAll: sender.__all === true
+                readonly property bool sendable: isAll || (sender.channels && sender.channels.length > 0)
+                readonly property bool active: root.svc
+                  ? (root.svc.senderFilter || "") === (sender.id || "")
+                  : false
 
                 width: senderList.width
                 height: Style.space(26)
+                color: active ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.10) : "transparent"
+
+                Rectangle {
+                  visible: parent.active
+                  width: Style.space(2); height: parent.height
+                  color: root.accent
+                  anchors.left: parent.left
+                }
 
                 Text {
                   anchors.verticalCenter: parent.verticalCenter
@@ -467,9 +518,9 @@ Item {
                   font.pixelSize: Style.font.bodySmall
                 }
 
-                // Un sender sin canales no puede enviar: decirlo, en vez de
-                // dejar que parezca listo. `channels` es capacidad calculada —
-                // un número de teléfono por sí solo no habilita nada.
+                // Un sender sin canales no puede enviar ni recibir: decirlo, en
+                // vez de dejar que parezca listo. `channels` es capacidad
+                // calculada — un número por sí solo no habilita nada.
                 Text {
                   visible: !sendable
                   text: "no channels"
@@ -480,7 +531,24 @@ Item {
                   anchors.rightMargin: Style.space(12)
                   anchors.verticalCenter: parent.verticalCenter
                 }
+
+                MouseArea {
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: root.pickSender(sender.id || "")
+                }
               }
+            }
+
+            Text {
+              anchors.top: senderList.top
+              anchors.topMargin: Style.space(10)
+              anchors.horizontalCenter: senderList.horizontalCenter
+              visible: root.visibleSenders.length <= 1 && root.senderQuery.length > 0
+              text: "no sender matches"
+              color: root.faint
+              font.family: Style.font.family
+              font.pixelSize: Style.font.caption
             }
 
             Item {
