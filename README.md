@@ -139,12 +139,11 @@ keeps its reach as small as it can:
 - It **only writes its own settings**, and only when you change one — that
   single entry in `shell.json`, through Omarchy's own `omarchy bar set`. It
   touches no other configuration, yours or anyone else's.
-- **Nothing the API returns reaches a shell.** Anything carrying a value that
-  came back from the API — opening a conversation in your browser, posting a
-  notification — is executed as an argv array, never as a string handed to
-  `bash -lc`. The two commands that do go through a shell (signing in, and
-  saving a setting via `omarchy bar set`) are built only from constants and
-  from this plugin's own settings schema.
+- **It never builds a shell command.** Every process the plugin starts — opening
+  a conversation in your browser, saving a setting, posting a notification,
+  signing in — is launched as an argv array. There is no string handed to
+  `bash -lc` anywhere in the plugin, so there is no quoting to get wrong and
+  nothing the API returns can be interpreted as a command.
 - **Message text is rendered as plain text.** Every label in both surfaces sets
   `textFormat: Text.PlainText`, so a message someone sends you cannot be
   interpreted as rich text — no markup, no fonts, and no images fetched from a

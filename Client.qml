@@ -37,13 +37,13 @@ QtObject {
    * "false", que es verdadera en JS y haría que apagar algo lo dejara encendido.
    * shell.json recarga en caliente, así que el cambio vuelve por onSettingsChanged.
    *
-   * Va por `run()` (shell) a propósito: `omarchy` vive en /usr/share/omarchy/bin,
-   * que no está en el PATH por defecto — lo añade el perfil de login, y el `-l`
-   * de `bash -lc` lo sourcea. `key` y `value` salen del schema de manifest.json,
-   * nunca de la API, así que aquí no hay nada ajeno que interpolar.
+   * Argv, sin shell. El paquete de Omarchy instala `omarchy` en /usr/bin, que ya
+   * está en el PATH que hereda el proceso de Quickshell, así que no hace falta
+   * ninguna shell de login para resolverlo.
    */
   function setSetting(key, value) {
-    root.run("omarchy bar set dev.zavu.inbox " + key + " " + JSON.stringify(value) + " --json")
+    root.exec(["omarchy", "bar", "set", "dev.zavu.inbox",
+               String(key), JSON.stringify(value), "--json"])
   }
 
   // ------------------------------------------------------------------- state
@@ -137,26 +137,33 @@ QtObject {
   // nuevo.
   readonly property string cliPackage: "zavudev@0.14.1"
 
-  /** Launch the real CLI. One auth path for the whole product, not a second one. */
+  /**
+   * Launch the real CLI. One auth path for the whole product, not a second one.
+   *
+   * El `bash -lc` de dentro es la carga útil del terminal, no una shell nuestra:
+   * lo que se ejecuta es una secuencia (`login; echo; read`) cuyo `read` deja la
+   * ventana abierta hasta que el usuario pulse una tecla. Va como argumento
+   * literal y constante, no como una cadena que montemos nosotros, así que no
+   * hay nada que citar ni nada que se pueda inyectar.
+   *
+   * `$TERMINAL` se resuelve aquí en vez de dejar que lo expanda una shell.
+   * xdg-terminal-exec es el lanzador de la Default Terminal Specification y el
+   * valor por defecto en Omarchy; sirve de fallback si la variable no está.
+   */
   function signIn() {
-    // Comando estático a propósito: nada de aquí sale de la API, así que es el
-    // único sitio del plugin donde se pasa por una shell.
-    root.run("$TERMINAL -e bash -lc 'npx " + root.cliPackage
-             + " login; echo; read -n 1 -s -r -p \"Press any key…\"'")
+    var term = String(Quickshell.env("TERMINAL") || "")
+    if (term.length === 0) term = "xdg-terminal-exec"
+    root.exec([term, "-e", "bash", "-lc",
+               "npx " + root.cliPackage
+               + " login; echo; read -n 1 -s -r -p \"Press any key…\""])
   }
 
   /**
-   * Ejecuta un comando A TRAVÉS DE UNA SHELL. Solo para cadenas constantes que
-   * necesitan expansión ($TERMINAL). Nunca le pases datos de la API: `bash -lc`
-   * expande `$(...)`, backticks y `${}` incluso entre comillas dobles, y
-   * JSON.stringify escapa para JSON, no para la shell. Usa `exec()`.
+   * El único camino para lanzar algo. Argv directo, nunca una cadena para una
+   * shell: `bash -lc` expande `$(...)`, backticks y `${}` incluso entre comillas
+   * dobles, y JSON.stringify escapa para JSON, no para la shell. Sin shell no
+   * hay quoting que acertar, así que no hay forma de equivocarse.
    */
-  function run(command) {
-    if (root.shell && typeof root.shell.run === "function") { root.shell.run(command); return }
-    launcher.exec(["bash", "-lc", command])
-  }
-
-  /** Ejecuta un argv directo. Sin shell, así que no hay quoting que acertar. */
   function exec(argv) { launcher.exec(argv) }
 
   // Sin `--`: xdg-open no lo soporta (rechaza cualquier `-*` como opción). No
