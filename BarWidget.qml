@@ -137,6 +137,7 @@ Panel {
       anchors.topMargin: Style.space(4)
 
       Text {
+        textFormat: Text.PlainText
         id: countLabel
         anchors.centerIn: parent
         visible: root.unread > 1
@@ -192,6 +193,7 @@ Panel {
           spacing: Style.space(8)
 
           Text {
+            textFormat: Text.PlainText
             text: "ZAVU"
             color: root.bar ? root.bar.foreground : Color.popups.text
             font.family: Style.font.family
@@ -202,6 +204,7 @@ Panel {
 
           // Selector de sender. Filtra por la API, no la página descargada.
           Text {
+            textFormat: Text.PlainText
             id: senderChip
             text: Fmt.elide(root.senderFilterName, 16) + "  ▾"
             color: root.mode === "senders" ? root.accent
@@ -224,6 +227,7 @@ Panel {
           }
 
           Text {
+            textFormat: Text.PlainText
             visible: root.svc && root.svc.testMode
             text: "TEST"
             color: Color.urgent
@@ -233,6 +237,7 @@ Panel {
           }
 
           Text {
+            textFormat: Text.PlainText
             id: refreshGlyph
             text: root.svc && root.svc.refreshing ? "󰑐" : "󰑓"
             color: root.svc && root.svc.refreshing ? root.accent
@@ -252,6 +257,7 @@ Panel {
           }
 
           Text {
+            textFormat: Text.PlainText
             id: gearGlyph
             text: "󰒓"
             color: root.mode === "settings" ? root.accent
@@ -278,6 +284,7 @@ Panel {
           visible: root.status === "needs_login"
 
           Text {
+            textFormat: Text.PlainText
             text: "Not signed in"
             color: root.bar ? root.bar.foreground : Color.popups.text
             font.family: Style.font.family
@@ -285,6 +292,7 @@ Panel {
             font.bold: true
           }
           Text {
+            textFormat: Text.PlainText
             width: parent.width
             wrapMode: Text.WordWrap
             text: "Sign in through your browser. Zavu creates a key for this machine — nothing to copy or paste."
@@ -298,6 +306,7 @@ Panel {
             onClicked: { if (root.svc) root.svc.signIn(); root.close() }
           }
           Text {
+            textFormat: Text.PlainText
             text: "runs npx zavudev login"
             color: Qt.darker(root.bar ? root.bar.foreground : Color.popups.text, 1.8)
             font.family: Style.font.family
@@ -312,6 +321,7 @@ Panel {
           visible: root.status === "unauthorized" || root.status === "offline"
 
           Text {
+            textFormat: Text.PlainText
             text: root.status === "unauthorized" ? "Key rejected" : "Can't reach the API"
             color: Color.urgent
             font.family: Style.font.family
@@ -319,6 +329,7 @@ Panel {
             font.bold: true
           }
           Text {
+            textFormat: Text.PlainText
             width: parent.width
             wrapMode: Text.WordWrap
             text: root.svc ? root.svc.errorMessage : ""
@@ -341,6 +352,7 @@ Panel {
           visible: root.status === "ready" && root.svc && root.svc.senders.length === 0
 
           Text {
+            textFormat: Text.PlainText
             text: "No accounts connected"
             color: root.bar ? root.bar.foreground : Color.popups.text
             font.family: Style.font.family
@@ -348,6 +360,7 @@ Panel {
             font.bold: true
           }
           Text {
+            textFormat: Text.PlainText
             width: parent.width
             wrapMode: Text.WordWrap
             text: "Connect WhatsApp, Telegram, Instagram, Messenger or a phone number to start receiving messages."
@@ -367,6 +380,7 @@ Panel {
 
         // ---------- no conversations ----------
         Text {
+          textFormat: Text.PlainText
           width: parent.width
           wrapMode: Text.WordWrap
           visible: root.status === "ready" && root.svc && root.svc.senders.length > 0 && root.threads.length === 0
@@ -388,6 +402,7 @@ Panel {
             color: (root.svc && !root.svc.senderFilter)
                    ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.10) : "transparent"
             Text {
+              textFormat: Text.PlainText
               anchors.verticalCenter: parent.verticalCenter
               anchors.left: parent.left
               anchors.leftMargin: Style.space(8)
@@ -416,6 +431,7 @@ Panel {
               color: active ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.10) : "transparent"
 
               Text {
+                textFormat: Text.PlainText
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
                 anchors.leftMargin: Style.space(8)
@@ -429,6 +445,7 @@ Panel {
                 font.pixelSize: Style.font.bodySmall
               }
               Text {
+                textFormat: Text.PlainText
                 visible: !sendable
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right
@@ -493,6 +510,7 @@ Panel {
               color: "transparent"
 
               Text {
+                textFormat: Text.PlainText
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
                 anchors.leftMargin: Style.space(8)
@@ -503,6 +521,7 @@ Panel {
               }
 
               Text {
+                textFormat: Text.PlainText
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right
                 anchors.rightMargin: Style.space(8)
@@ -534,6 +553,7 @@ Panel {
           }
 
           Text {
+            textFormat: Text.PlainText
             width: parent.width
             wrapMode: Text.WordWrap
             text: "Saved to shell.json. Turning notifications off keeps the unread dot in the bar."
@@ -583,6 +603,7 @@ Panel {
                   spacing: Style.space(6)
 
                   Text {
+                    textFormat: Text.PlainText
                     text: Fmt.elide(Fmt.threadTitle(thread), 24)
                     color: root.bar ? root.bar.foreground : Color.popups.text
                     font.family: Style.font.family
@@ -597,6 +618,7 @@ Panel {
                   }
                   Item { width: Math.max(0, parent.width - Style.space(190)); height: 1 }
                   Text {
+                    textFormat: Text.PlainText
                     text: Fmt.ago(thread.lastMessage ? thread.lastMessage.at : null)
                     color: Qt.darker(root.bar ? root.bar.foreground : Color.popups.text, 1.7)
                     font.family: Style.font.family
@@ -605,6 +627,7 @@ Panel {
                 }
 
                 Text {
+                  textFormat: Text.PlainText
                   width: parent.width
                   text: Fmt.channelGlyph(thread.lastMessage ? thread.lastMessage.channel : "") + "  " +
                         Fmt.elide(Fmt.preview(thread), 42)
@@ -655,6 +678,7 @@ Panel {
             spacing: Style.space(10)
 
             Text {
+              textFormat: Text.PlainText
               text: "enter to send"
               color: Qt.darker(root.bar ? root.bar.foreground : Color.popups.text, 1.8)
               font.family: Style.font.family
@@ -662,6 +686,7 @@ Panel {
             }
             Item { width: Math.max(0, parent.width - Style.space(180)); height: 1 }
             Text {
+              textFormat: Text.PlainText
               text: root.svc && root.svc.lastSyncAt > 0
                     ? "synced " + Fmt.ago(root.svc.lastSyncAt)
                     : ""

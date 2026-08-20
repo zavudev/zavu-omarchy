@@ -72,11 +72,15 @@ machine, the plugin is already signed in — it reads the CLI's own credentials
 and never writes to them.
 
 ```bash
-npx zavudev@latest login
+npx zavudev login
 ```
 
 Your browser opens, you pick a project, and the bar picks it up the moment you
 are done. No key to copy or paste.
+
+The plugin's own **Sign in** button runs the same command, pinned to an exact
+CLI version rather than `@latest`, so what it executes is the code that was
+reviewed and not whatever npm serves later.
 
 Don't have an account yet? [Create one at zavu.dev](https://zavu.dev) — the free
 plan is enough to try this.
@@ -135,7 +139,16 @@ keeps its reach as small as it can:
 - It **only writes its own settings**, and only when you change one — that
   single entry in `shell.json`, through Omarchy's own `omarchy bar set`. It
   touches no other configuration, yours or anyone else's.
-- Message content **never reaches a shell command**.
+- **Nothing the API returns reaches a shell.** Anything carrying a value that
+  came back from the API — opening a conversation in your browser, posting a
+  notification — is executed as an argv array, never as a string handed to
+  `bash -lc`. The two commands that do go through a shell (signing in, and
+  saving a setting via `omarchy bar set`) are built only from constants and
+  from this plugin's own settings schema.
+- **Message text is rendered as plain text.** Every label in both surfaces sets
+  `textFormat: Text.PlainText`, so a message someone sends you cannot be
+  interpreted as rich text — no markup, no fonts, and no images fetched from a
+  URL a stranger chose. Notification bodies are escaped for the same reason.
 
 ## License
 

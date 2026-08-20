@@ -36,6 +36,11 @@ QtObject {
    * `--json` para que un booleano se guarde como booleano y no como la cadena
    * "false", que es verdadera en JS y haría que apagar algo lo dejara encendido.
    * shell.json recarga en caliente, así que el cambio vuelve por onSettingsChanged.
+   *
+   * Va por `run()` (shell) a propósito: `omarchy` vive en /usr/share/omarchy/bin,
+   * que no está en el PATH por defecto — lo añade el perfil de login, y el `-l`
+   * de `bash -lc` lo sourcea. `key` y `value` salen del schema de manifest.json,
+   * nunca de la API, así que aquí no hay nada ajeno que interpolar.
    */
   function setSetting(key, value) {
     root.run("omarchy bar set dev.zavu.inbox " + key + " " + JSON.stringify(value) + " --json")
@@ -125,17 +130,39 @@ QtObject {
     root.bootstrap()
   }
 
+  // El CLI que abre el botón de sign-in va clavado a una versión exacta.
+  // `zavudev@latest` descargaría lo que npm sirva en ese momento: código que no
+  // estaba en el commit que el marketplace revisó. Una versión publicada en npm
+  // es inmutable, así que esto sí es auditable. Súbela a mano al adoptar un CLI
+  // nuevo.
+  readonly property string cliPackage: "zavudev@0.14.1"
+
   /** Launch the real CLI. One auth path for the whole product, not a second one. */
   function signIn() {
-    root.run("$TERMINAL -e bash -lc 'npx zavudev@latest login; echo; read -n 1 -s -r -p \"Press any key…\"'")
+    // Comando estático a propósito: nada de aquí sale de la API, así que es el
+    // único sitio del plugin donde se pasa por una shell.
+    root.run("$TERMINAL -e bash -lc 'npx " + root.cliPackage
+             + " login; echo; read -n 1 -s -r -p \"Press any key…\"'")
   }
 
+  /**
+   * Ejecuta un comando A TRAVÉS DE UNA SHELL. Solo para cadenas constantes que
+   * necesitan expansión ($TERMINAL). Nunca le pases datos de la API: `bash -lc`
+   * expande `$(...)`, backticks y `${}` incluso entre comillas dobles, y
+   * JSON.stringify escapa para JSON, no para la shell. Usa `exec()`.
+   */
   function run(command) {
     if (root.shell && typeof root.shell.run === "function") { root.shell.run(command); return }
     launcher.exec(["bash", "-lc", command])
   }
 
-  function openUrl(url) { root.run("xdg-open " + JSON.stringify(url)) }
+  /** Ejecuta un argv directo. Sin shell, así que no hay quoting que acertar. */
+  function exec(argv) { launcher.exec(argv) }
+
+  // Sin `--`: xdg-open no lo soporta (rechaza cualquier `-*` como opción). No
+  // hace falta, porque todas las URLs las construye Format.js con el prefijo
+  // https:// fijo — ninguna puede empezar por `-`.
+  function openUrl(url) { root.exec(["xdg-open", String(url)]) }
 
   property Process launcher: Process { }
   property Process notifier: Process { }
@@ -234,10 +261,18 @@ QtObject {
     return c.profileName || c.email || c.contactIdentifier || "unknown"
   }
 
+  // El cuerpo lo escribe cualquier desconocido que mande un mensaje, y varios
+  // demonios de notificaciones (dunst, mako) interpretan marcado tipo
+  // `<img src>` / `<a href>` en él. Se escapa antes de salir, y `--` evita que
+  // un título que empiece por `-` se lea como opción de notify-send.
+  function notifyMarkupSafe(s) {
+    return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+  }
+
   function notifyDesktop(c, last) {
-    var title = root.titleOf(c)
-    var body = String(last.text || "").slice(0, 160)
-    notifier.exec(["notify-send", "-a", "Zavu", "-i", "mail-message-new", title, body])
+    var title = root.notifyMarkupSafe(root.titleOf(c))
+    var body = root.notifyMarkupSafe(String(last.text || "").slice(0, 160))
+    notifier.exec(["notify-send", "-a", "Zavu", "-i", "mail-message-new", "--", title, body])
   }
 
   /**

@@ -227,6 +227,7 @@ Item {
             spacing: Style.space(12)
 
             Text {
+              textFormat: Text.PlainText
               text: "ZAVU"
               color: root.fg
               font.family: Style.font.family
@@ -235,6 +236,7 @@ Item {
               anchors.verticalCenter: parent.verticalCenter
             }
             Text {
+              textFormat: Text.PlainText
               text: "inbox"
               color: root.faint
               font.family: Style.font.family
@@ -250,6 +252,7 @@ Item {
             spacing: Style.space(12)
 
             Text {
+              textFormat: Text.PlainText
               text: root.svc && root.svc.projectName ? root.svc.projectName : ""
               color: root.dim
               font.family: Style.font.family
@@ -265,6 +268,7 @@ Item {
               border.color: Color.urgent
               anchors.verticalCenter: parent.verticalCenter
               Text {
+                textFormat: Text.PlainText
                 id: testLabel
                 anchors.centerIn: parent
                 text: "TEST"
@@ -274,6 +278,7 @@ Item {
               }
             }
             Text {
+              textFormat: Text.PlainText
               text: {
                 if (root.svc && root.svc.refreshing) return "refreshing…"
                 return root.svc && root.svc.lastSyncAt > 0 ? "synced " + Fmt.ago(root.svc.lastSyncAt) : "—"
@@ -313,6 +318,7 @@ Item {
             spacing: Style.space(12)
 
             Text {
+              textFormat: Text.PlainText
               anchors.horizontalCenter: parent.horizontalCenter
               text: {
                 if (!root.svc) return "◍"
@@ -327,6 +333,7 @@ Item {
               font.pixelSize: Style.font.displayLarge
             }
             Text {
+              textFormat: Text.PlainText
               anchors.horizontalCenter: parent.horizontalCenter
               horizontalAlignment: Text.AlignHCenter
               width: parent.width
@@ -344,6 +351,7 @@ Item {
               font.bold: true
             }
             Text {
+              textFormat: Text.PlainText
               anchors.horizontalCenter: parent.horizontalCenter
               horizontalAlignment: Text.AlignHCenter
               width: parent.width
@@ -366,6 +374,7 @@ Item {
               onClicked: { if (root.svc) root.svc.signIn(); root.dismiss() }
             }
             Text {
+              textFormat: Text.PlainText
               anchors.horizontalCenter: parent.horizontalCenter
               visible: root.svc && root.svc.status === "needs_login"
               text: "runs npx zavudev login"
@@ -388,6 +397,7 @@ Item {
             spacing: Style.space(12)
 
             Text {
+              textFormat: Text.PlainText
               anchors.horizontalCenter: parent.horizontalCenter
               text: "⌁"
               color: root.dim
@@ -395,6 +405,7 @@ Item {
               font.pixelSize: Style.font.displayLarge
             }
             Text {
+              textFormat: Text.PlainText
               anchors.horizontalCenter: parent.horizontalCenter
               text: "No accounts connected"
               color: root.fg
@@ -403,6 +414,7 @@ Item {
               font.bold: true
             }
             Text {
+              textFormat: Text.PlainText
               anchors.horizontalCenter: parent.horizontalCenter
               horizontalAlignment: Text.AlignHCenter
               width: parent.width
@@ -422,6 +434,7 @@ Item {
               }
             }
             Text {
+              textFormat: Text.PlainText
               anchors.horizontalCenter: parent.horizontalCenter
               text: root.svc ? Fmt.accountsUrl(root.svc.locale) : ""
               color: root.faint
@@ -449,6 +462,7 @@ Item {
             // la tarjeta y pintaba por encima del resto de la pantalla: nada
             // recorta un Column, y no scrollea.
             Text {
+              textFormat: Text.PlainText
               id: railLabel
               text: "SENDERS"
               color: root.faint
@@ -507,6 +521,7 @@ Item {
                 }
 
                 Text {
+                  textFormat: Text.PlainText
                   anchors.verticalCenter: parent.verticalCenter
                   anchors.left: parent.left
                   anchors.leftMargin: Style.space(16)
@@ -522,6 +537,7 @@ Item {
                 // vez de dejar que parezca listo. `channels` es capacidad
                 // calculada — un número por sí solo no habilita nada.
                 Text {
+                  textFormat: Text.PlainText
                   visible: !sendable
                   text: "no channels"
                   color: root.faint
@@ -541,6 +557,7 @@ Item {
             }
 
             Text {
+              textFormat: Text.PlainText
               anchors.top: senderList.top
               anchors.topMargin: Style.space(10)
               anchors.horizontalCenter: senderList.horizontalCenter
@@ -605,6 +622,7 @@ Item {
             }
 
             Text {
+              textFormat: Text.PlainText
               id: scope
               anchors.top: searchRule.bottom
               anchors.left: parent.left
@@ -657,6 +675,7 @@ Item {
                     width: parent.width
                     spacing: Style.space(6)
                     Text {
+                      textFormat: Text.PlainText
                       text: Fmt.elide(Fmt.threadTitle(thread), 22)
                       color: root.fg
                       font.family: Style.font.family
@@ -671,6 +690,7 @@ Item {
                     }
                     Item { width: Math.max(0, parent.width - Style.space(200)); height: 1 }
                     Text {
+                      textFormat: Text.PlainText
                       text: Fmt.ago(thread.lastMessage ? thread.lastMessage.at : null)
                       color: root.faint
                       font.family: Style.font.family
@@ -679,6 +699,7 @@ Item {
                   }
 
                   Text {
+                    textFormat: Text.PlainText
                     width: parent.width
                     text: Fmt.channelGlyph(thread.lastMessage ? thread.lastMessage.channel : "") + "  " +
                           (thread.contactIdentifier || thread.email || "")
@@ -689,6 +710,7 @@ Item {
                   }
 
                   Text {
+                    textFormat: Text.PlainText
                     width: parent.width
                     text: Fmt.preview(thread)
                     color: root.dim
@@ -715,6 +737,7 @@ Item {
               spacing: Style.space(6)
 
               Text {
+                textFormat: Text.PlainText
                 anchors.horizontalCenter: parent.horizontalCenter
                 horizontalAlignment: Text.AlignHCenter
                 width: parent.width
@@ -727,6 +750,7 @@ Item {
                 font.pixelSize: Style.font.bodySmall
               }
               Text {
+                textFormat: Text.PlainText
                 anchors.horizontalCenter: parent.horizontalCenter
                 horizontalAlignment: Text.AlignHCenter
                 width: parent.width
@@ -759,6 +783,7 @@ Item {
               visible: root.current !== null
 
               Text {
+                textFormat: Text.PlainText
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
                 anchors.leftMargin: Style.space(16)
@@ -776,6 +801,7 @@ Item {
                 spacing: Style.space(10)
 
                 Text {
+                  textFormat: Text.PlainText
                   text: root.currentChannel
                   color: root.faint
                   font.family: Style.font.family
@@ -783,6 +809,7 @@ Item {
                   anchors.verticalCenter: parent.verticalCenter
                 }
                 Text {
+                  textFormat: Text.PlainText
                   visible: root.windowMs !== null
                   text: Fmt.windowLabel(root.windowMs)
                   color: root.windowClosed ? Color.urgent : root.faint
@@ -860,6 +887,7 @@ Item {
                     }
 
                     Text {
+                      textFormat: Text.PlainText
                       id: body
                       width: Math.min(maxBubbleWidth, metrics.width)
                       wrapMode: Text.WordWrap
@@ -872,6 +900,7 @@ Item {
                     // The API's own errorMessage, verbatim. It already tells the
                     // reader what to do; anything we substituted would be worse.
                     Text {
+                      textFormat: Text.PlainText
                       visible: failed
                       width: bubbleCol.width
                       wrapMode: Text.WordWrap
@@ -882,6 +911,7 @@ Item {
                     }
 
                     Text {
+                      textFormat: Text.PlainText
                       id: meta
                       text: {
                         if (msg.__pending) return "sending…"
@@ -920,6 +950,7 @@ Item {
                 visible: root.windowClosed
 
                 Text {
+                  textFormat: Text.PlainText
                   anchors.verticalCenter: parent.verticalCenter
                   text: "window closed · free-form replies are refused on this channel"
                   color: Color.urgent
@@ -953,6 +984,7 @@ Item {
 
             // Nothing selected yet.
             Text {
+              textFormat: Text.PlainText
               anchors.centerIn: parent
               visible: root.current === null
               text: "Select a thread"
